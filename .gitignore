@@ -1,0 +1,9 @@
+merged.csv
+.DS_Store
+__pycache__/
+*.pyc
+gradient_boosting_rescue.pkl
+
+# Keep the lightweight prediction file for Streamlit Cloud.
+outputs/*
+!outputs/predicciones_gradient_boosting.csv
