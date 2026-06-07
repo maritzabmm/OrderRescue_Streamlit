@@ -74,6 +74,7 @@ div[data-testid="stMetric"]{background:#fff;border-radius:10px;padding:12px;box-
 # CONSTANTS
 # ─────────────────────────────────────────────
 BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
+FULL_PATH  = os.path.join(BASE_DIR, "data_full.parquet")
 PRED_PATH  = os.path.join(BASE_DIR, "outputs", "predicciones_gradient_boosting.csv")
 MODEL_PATH = os.path.join(BASE_DIR, "modelo_sustitucion_completo.pkl")
 OUTPUT_DIR = os.path.join(BASE_DIR, "outputs")
@@ -174,6 +175,8 @@ def _preparar_df(df: pd.DataFrame) -> pd.DataFrame:
 @st.cache_data(show_spinner=False)
 def load_predictions(path: str) -> pd.DataFrame:
     try:
+        if path.endswith(".parquet"):
+            return _preparar_df(pd.read_parquet(path))
         return _preparar_df(pd.read_csv(path))
     except Exception as e:
         st.error(f"Error: {e}"); return pd.DataFrame()
@@ -340,11 +343,13 @@ with st.sidebar:
 # SESSION STATE — carga automática
 # ─────────────────────────────────────────────
 if "df" not in st.session_state:
-    if os.path.exists(PRED_PATH) and os.path.getsize(PRED_PATH) > 1000:
-        st.session_state.df = load_predictions(PRED_PATH)
+    if os.path.exists(FULL_PATH) and os.path.getsize(FULL_PATH) > 1000:
+        st.session_state.df = load_predictions(FULL_PATH)
     elif os.path.exists(MERGED_PATH) and os.path.getsize(MERGED_PATH) > 1000:
         with st.spinner("⏳ Cargando datos y calculando probabilidades del modelo..."):
             st.session_state.df = _preparar_df(pd.read_csv(MERGED_PATH))
+    elif os.path.exists(PRED_PATH) and os.path.getsize(PRED_PATH) > 1000:
+        st.session_state.df = load_predictions(PRED_PATH)
     else:
         st.session_state.df = pd.DataFrame()
 
@@ -362,7 +367,7 @@ if "Home" in menu:
     </div>""", unsafe_allow_html=True)
 
     if df.empty:
-        st.warning("⚠️ No hay datos. Coloca merged.csv en la carpeta ORDER RESCUE/ y reinicia.")
+        st.warning("⚠️ No hay datos. Coloca data_full.parquet o merged.csv en la carpeta ORDER RESCUE/ y reinicia.")
         st.stop()
 
     total_pedidos = df["id_pedido"].nunique() if "id_pedido" in df.columns else len(df)
